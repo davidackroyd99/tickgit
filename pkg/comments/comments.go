@@ -74,13 +74,15 @@ func SearchDir(dirPath string, cb func(comment *Comment)) error {
 			}
 			pathComponents := strings.Split(localPath, string(os.PathSeparator))
 			// let's ignore git directories TODO: figure out a more generic way to set ignores
-			matched, err := filepath.Match(".git", pathComponents[0])
+			search, err := shouldSearch(pathComponents)
+
 			if err != nil {
 				return err
 			}
-			if matched {
+			if !search {
 				return nil
 			}
+
 			if de.IsRegular() {
 				p, err := filepath.Abs(path)
 				if err != nil {
@@ -104,6 +106,26 @@ func SearchDir(dirPath string, cb func(comment *Comment)) error {
 		return err
 	}
 	return nil
+}
+
+// shouldSearch checks to see if we should search this directory
+func shouldSearch(pathComponents []string) (bool, error) {
+	matched, err := filepath.Match(".git", pathComponents[0])
+	if err != nil {
+		return false, err
+	}
+	if matched {
+		return false, nil
+	}
+
+	matched, err = filepath.Match(".vs", pathComponents[0])
+	if err != nil {
+		return false, err
+	}
+	if matched {
+		return false, nil
+	}
+	return true, nil
 }
 
 // SearchCommit searches all files in the tree of a given commit
